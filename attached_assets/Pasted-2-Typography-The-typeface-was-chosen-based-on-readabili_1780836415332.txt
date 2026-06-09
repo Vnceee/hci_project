@@ -1,0 +1,51 @@
+2. Typography
+The typeface was chosen based on readability in Sarawak driving conditions including sun glare, rain and quick glances at driving speeds. Sans-serif and geometric display fonts were preferred to reduce stroke complexity and maintain clarity at a minimum reading distance of 60cm.
+Element
+Font
+Usage
+Rationale
+Primary Label
+Exo
+Main dashboard labels, card titles 
+Clean and modern typeface that supports readability of core interface information.
+Secondary Label
+Exo 2
+Secondary information, supporting stats 
+Softer rounded forms improve readability for smaller supporting content.
+Button Label
+Exo 2
+Control labels, mode buttons 
+Maintains visual consistency while remaining readable on small interactive elements.
+Supporting Text
+Exo 2
+Captions, sublabels, descriptions 
+Compact letterforms fit dense dashboard layouts without sacrificing clarity.
+Mixed Text & Number Strings 
+Exo 2
+Range (200km), distance (200m), time, date, ETA, wind speed (km/h)
+Used when numbers are paired with text units, providing better readability and consistency than a monospace font.
+Pure Numerical Indicators
+DM Mono
+Battery %, temperature (°), PSI, humidity (%) 
+Fixed-width digits maintain stable alignment as values update in real time.
+Music timestamp 
+DM Mono
+Playback position and duration (0:00 / 3:21) 
+Keeps time values aligned and prevents visual shifting during playback.
+Dialer Keypad
+DM Mono
+Numeric keypad buttons  
+Uniform character width creates consistent spacing across the keypad grid.
+Dialer Number Display
+DM Mono
+Entered phone number
+Fixed-width digits improve readability and maintain stable alignment as numbers are entered.
+Call Timer
+DM Mono
+Ongoing call duration 
+Stable digit spacing improves readability during continuous updates. 
+Speed Display
+Orbitron
+Main speed meter 
+Futuristic digital styling establishes a strong EV identity while making speed the most visually dominant information. Large geometric characters remain legible at a driving distance of 60–70 cm. 
+

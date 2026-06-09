@@ -1,0 +1,170 @@
+Visual Design Decisions:
+1. Color Palette
+A dark-themed colour system was selected to reduce glare under Sarawak's intense sunlight. Colours follow familiar traffic-light conventions (red=danger, yellow=caution, green=safe, orange=unavailable) to support quick recognition with minimal cognitive effort. Secondary labels use 60% opacity white to create visual hierarchy.
+Color
+Hex
+Usage
+Rationale
+Black
+
+
+
+
+#000000
+Dynamic Ailon notification center background 
+Maximum contrast base because notification centre needs darkest layer to stand out from all panels 
+
+
+
+
+
+
+#1A1A22
+Main background
+Primary dark surface to reduce glare reflection under Sarawak sun while maintaining visibility 
+
+
+
+
+
+
+#111118 
+Panel background
+Slightly lighter than the main background to create panel separation without visual clutter.
+
+
+
+
+
+
+#1E1E2A 
+Button and component background within panels 
+Distinguishes interactive components from static content, improving visual recognition.
+Grey
+
+
+
+
+#8383A0 
+Zoom controls, time duration, street names, price labels 
+Muted colour indicates secondary information while maintaining readability.
+
+
+
+
+
+
+#C5C5C5 
+Gear label background
+Neutral background keeps gear labels visible without competing with active states.
+White
+
+
+
+
+#FFFFFF 
+Main text, secondary labels at 60% opacity 
+Maximum contrast on dark background and 60% opacity for secondary text creates natural hierarchy without additional colour 
+Red
+
+
+
+
+#F93827 
+Active gear label, critical tyre below 20 PSI, stop navigation button 
+Universal danger colour that attracts immediate attention to critical conditions.
+Yellow
+
+
+
+
+#FFD65A 
+Low PSI tyre indicator 
+Signals caution without implying danger, following familiar traffic-light conventions.
+Blue
+
+
+
+
+#3D53FF 
+kW text on charging station page 
+Distinguishes charging information and aligns with common electrical-system conventions.
+
+
+
+
+
+
+#232D49 
+kW background on charging station 
+Dark blue container reinforces electrical energy context without overpowering surrounding content 
+Green
+
+
+
+
+#16C47F 
+Normal PSI indicator 
+Indicates safe operating conditions and requires no driver action.
+
+
+
+
+
+
+#01CEA5 
+Start navigation button, selected charging station dot, range distance 
+Highlights primary actions and confirms selected states.
+
+
+
+
+
+
+#2CFF95 
+Available charging station text, building open/close status 
+Bright green emphasizes availability and positive system status.
+
+
+
+
+
+
+#1F3732 
+Available charging station text background 
+Dark container for bright green text to ensure sufficient contrast for readability 
+
+
+
+
+
+
+#009007 
+Navigation direction arrow and text background 
+Reserved for navigation guidance to clearly distinguish route information from other content.
+
+
+
+
+
+
+#32372e 
+Unavailable charging station background 
+Indicates inactive or unavailable states without conflicting with danger colours.
+Orange
+
+
+
+
+#f86935 
+Unavailable charging station label, busy dot indicator 
+Indicates occupied or unavailable status while remaining distinct from danger and availability colours.
+Gold
+
+
+
+
+#F5A623 
+Turn signal chevrons on meter dashboard 
+Mirrors real vehicle indicator colours, supporting immediate recognition.
+

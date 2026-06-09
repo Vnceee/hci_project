@@ -1,0 +1,33 @@
+[build]
+builder = "nixpacks"
+
+[[services]]
+name = "postgres"
+image = "postgres:16"
+
+[[services.variables]]
+POSTGRES_USER = "postgres"
+POSTGRES_PASSWORD = "postgres"
+POSTGRES_DB = "car_display"
+
+[[services]]
+name = "api-server"
+startCommand = "pnpm --filter @workspace/api-server run start"
+
+[[services.build]]
+buildCommand = "pnpm install && pnpm run build"
+
+[[services.variables]]
+PORT = "5000"
+NODE_ENV = "production"
+
+[[services]]
+name = "web"
+startCommand = "pnpm --filter @workspace/ev-dashboard run serve"
+
+[[services.build]]
+buildCommand = "pnpm install && pnpm --filter @workspace/ev-dashboard run build"
+
+[[services.variables]]
+VITE_PORT = "3000"
+BASE_PATH = "/"
