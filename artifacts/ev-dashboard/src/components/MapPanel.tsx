@@ -126,9 +126,12 @@ export default function MapPanel() {
     el.style.transition = navProgress < 0.001
       ? "transform 0.7s ease"
       : "transform 0.95s linear";
-    el.style.transformOrigin = "50% 72%";
+    // Keep user location centered on screen (50% 50%)
+    el.style.transformOrigin = "50% 50%";
     // Scale > 1 hides the empty triangles rotation introduces at corners.
-    el.style.transform = `scale(1.7) rotate(${-bearingDeg}deg)`;
+    // bearingDeg from Math.atan2(dLng, dLat) is already geographic north-up bearing;
+    // rotating map by -bearingDeg keeps the route direction pointing up.
+    el.style.transform = `scale(1.6) rotate(${-bearingDeg}deg)`;
     map.setView(cur, 17, { animate: true, duration: 0.95 });
     userMarkerRef.current?.setLatLng(cur);
     return;

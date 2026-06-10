@@ -1,46 +1,42 @@
 import TopBar from "@/components/TopBar";
 import CarDetailsView from "@/components/CarDetailsView";
-import ClimatePanel from "@/components/ClimatePanel";
 import MeterDashboard from "@/components/MeterDashboard";
 import ChargingStationView from "@/components/ChargingStationView";
 import TyreStatusView from "@/components/TyreStatusView";
 import SleepOverlay from "@/components/SleepOverlay";
 import OnScreenKeyboard from "@/components/OnScreenKeyboard";
-import HomePanel from "@/components/HomePanel";
+import HomePanel, { NavMapPanel } from "@/components/HomePanel";
 import MapPanel from "@/components/MapPanel";
 import SideBar from "@/components/SideBar";
-import CarPanel from "@/components/CarPanel";
 
 import { useTheme } from "@/context/ThemeContext";
 import { NavProvider, useNav } from "@/context/NavContext";
 
 function DashboardInner() {
   const { theme } = useTheme();
-  const { view, navMode, mapHidden } = useNav();
+  const { view, navMode } = useNav();
 
   const showCarDetails = view === "car-details";
   const showCharging   = view === "charging";
   const showTyres      = view === "tyres";
   const showFullPanel  = showCarDetails || showCharging || showTyres;
 
-  // HomePanel handles ALL non-nav, non-full, non-meter views.
-  // It owns its own internal 3-column layout (car | content | nav) and
-  // decides what to show in the centre based on the current `view`.
+  // HomePanel handles ALL non-nav, non-full, non-meter views
   const showHomeLayout = !navMode && view !== "meter" && !showFullPanel;
 
   // Grid columns
   let cols: string;
   if (navMode) {
-    // Navigation is ALWAYS full-screen — no CarPanel alongside.
     cols = "1fr 56px";
   } else if (showCharging) {
+    // ChargingStationView has its own internal map, no extra map needed
     cols = "1fr 56px";
   } else if (showFullPanel) {
-    cols = mapHidden ? "1fr 56px" : "2fr 1fr 56px";
-  } else if (showHomeLayout) {
-    cols = "1fr 56px"; // HomePanel fills the 1fr
+    // car-details and tyres show alongside a mini NavMapPanel
+    cols = "2fr 1fr 56px";
   } else {
-    cols = "1fr 56px"; // meter / fallback
+    // HomePanel (home + all feature sub-views)
+    cols = "1fr 56px";
   }
 
   return (
@@ -72,24 +68,22 @@ function DashboardInner() {
           transition: "grid-template-columns 0.4s cubic-bezier(0.4,0,0.2,1)",
         }}
       >
-        {/* HomePanel — handles home + all feature sub-views internally */}
+        {/* Home + all feature sub-views */}
         {showHomeLayout && <HomePanel />}
 
-        {/* Full-panel special views */}
+        {/* Car details — 2/3 width with NavMapPanel on the right */}
         {showCarDetails && <CarDetailsView />}
-        {showCharging   && <ChargingStationView />}
-        {showTyres      && <TyreStatusView />}
+        {showCarDetails && <NavMapPanel theme={theme} />}
 
-        {/* Navigation — always full-screen map, no CarPanel alongside */}
-        {navMode && !mapHidden && !showCharging && (
-          <>
-            <MapPanel />
-          </>
-        )}
-        {/* CarPanel is only shown alongside the map when mapHidden in
-            car-details nav mode — matches the legacy behaviour for that
-            specific edge case */}
-        {navMode && showCarDetails && mapHidden && <CarPanel />}
+        {/* Charging — full width (has own internal map) */}
+        {showCharging && <ChargingStationView />}
+
+        {/* Tyres — 2/3 width with NavMapPanel on the right */}
+        {showTyres && <TyreStatusView />}
+        {showTyres && <NavMapPanel theme={theme} />}
+
+        {/* Navigation — always full-screen map */}
+        {navMode && <MapPanel />}
 
         <SideBar />
       </div>

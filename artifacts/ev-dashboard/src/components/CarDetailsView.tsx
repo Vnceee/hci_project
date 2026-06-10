@@ -11,7 +11,7 @@ export default function CarDetailsView() {
   // Pull battery + range from NavContext so this screen, the homepage and
   // the meter cluster all show the same numbers.
   const { setView, gear, mode, setMode, batteryPct, kmLeft } = useNav();
-  const [charging, setCharging] = useState(true);
+  const [charging, setCharging] = useState(false);
   const [locked, setLocked] = useState(true);
 
   return (
@@ -159,7 +159,7 @@ export default function CarDetailsView() {
       {/* Bottom-center: Drive-mode picker + read-only gear pill.
           Gear is set from the meter cluster — shown here as a label only. */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-        <DriveModeRow theme={theme} mode={mode} setMode={setMode} />
+        <DriveModeRow theme={theme} mode={mode} setMode={setMode} readOnly />
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{
             border: `1.5px solid ${gear === "R" ? theme.danger : theme.success}`,
@@ -195,22 +195,23 @@ export default function CarDetailsView() {
  * panel too, so it's exported.
  */
 export function DriveModeRow({
-  theme, mode, setMode, compact,
+  theme, mode, setMode, compact, readOnly,
 }: {
   theme: Theme;
   mode: import("@/context/NavContext").DriveMode;
   setMode: (m: import("@/context/NavContext").DriveMode) => void;
   compact?: boolean;
+  readOnly?: boolean;
 }) {
   const modes: import("@/context/NavContext").DriveMode[] = ["Auto", "Eco", "Normal", "Sport"];
   return (
-    <div style={{ display: "flex", gap: compact ? "6px" : "8px" }}>
+    <div style={{ display: "flex", gap: compact ? "6px" : "8px", pointerEvents: readOnly ? "none" : "auto" }}>
       {modes.map(m => {
         const active = m === mode;
         return (
           <button
             key={m}
-            onClick={() => setMode(m)}
+            onClick={readOnly ? undefined : () => setMode(m)}
             style={{
               background: active ? theme.success : theme.cardBg,
               border: `1px solid ${active ? theme.success : theme.border}`,
@@ -219,7 +220,7 @@ export function DriveModeRow({
               color: active ? "#fff" : theme.textSub,
               fontSize: compact ? "11px" : "12px",
               fontWeight: 700,
-              cursor: "pointer",
+              cursor: readOnly ? "default" : "pointer",
               boxShadow: active ? `0 4px 12px ${theme.success}55` : "none",
               transition: "all 0.15s",
               fontFamily: "inherit",
