@@ -4,10 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig({
-  // IMPORTANT: This must match your GitHub repository name exactly. 
-  // If your repo is named 'hci_project', keep it like this:
-  base: "/hci_project/", 
-  
   plugins: [
     react(),
     tailwindcss(),
@@ -15,13 +11,16 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
-      // Removed the @assets alias that pointed outside the project to prevent build errors
     },
     dedupe: ["react", "react-dom"],
   },
+  server: {
+    host: "0.0.0.0",
+    port: 5000,
+    allowedHosts: true,
+  },
   build: {
-    // Outputs the static HTML/CSS/JS to a standard 'dist' folder
-    outDir: "dist", 
+    outDir: "dist",
     emptyOutDir: true,
   }
 });
