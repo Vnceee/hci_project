@@ -1,76 +1,73 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTheme, type Theme } from "@/context/ThemeContext";
 import {
   useNav, TYRE_READINGS, classifyTyre, DEST_LOCATIONS,
-  type TyrePosition,
+  type TyrePosition, type ViewMode,
 } from "@/context/NavContext";
 import { DriveModeRow } from "@/components/CarDetailsView";
 import MiniMap from "@/components/MiniMap";
 import { TopProgressBar } from "@/components/MapPanel";
+import FeaturePanel from "@/components/FeaturePanel";
+import ClimatePanel from "@/components/ClimatePanel";
 
 /**
- * Two HomePanel layouts:
- *   - Idle (no destination): 2-column main home. The car panel is the
- *     primary surface (2fr) and the side stack (1fr) shows feature cards
- *     including a Live Location card the user taps to start navigating.
- *   - Navigating (a destination is set): 3-column layout with a third
- *     column dedicated to the live nav map and a Stop Navigation button
- *     that mirrors the one in the full nav view.
+ * HomePanel owns all non-nav, non-full-screen views.
+ *
+ * Layout rules:
+ *   - Always 3 columns: Car | CenterContent | NavMap
+ *   - CenterContent switches based on `view` (home → CardsPanel,
+ *     climate → ClimatePanel, anything else → FeaturePanel)
+ *   - Double-clicking a feature card sets fullScreenFeature=true,
+ *     which hides the CarPanel and shows just the feature full width.
+ *   - Back while fullScreenFeature restores the 3-col layout.
  */
 export default function HomePanel() {
   const { theme } = useTheme();
-  const { hasDestination, panelLayout } = useNav();
+  const { view, fullScreenFeature } = useNav();
 
-  if (hasDestination) {
+  // Full-screen feature mode (triggered by double-click)
+  if (fullScreenFeature && view !== "home") {
     return (
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr 1fr",
-        gap: "10px",
-        height: "100%",
-        minHeight: 0,
-      }}>
-        <CarPanel theme={theme} />
-        <CardsPanel theme={theme} showLiveLocation={false} />
-        <NavPanel theme={theme} />
+      <div style={{ height: "100%", minHeight: 0 }}>
+        {view === "climate" ? <ClimatePanel /> : <FeaturePanel view={view} />}
       </div>
     );
   }
 
-  // 3-panel idle: car | cards | live map (equal thirds)
-  if (panelLayout === "3") {
-    return (
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr 1fr",
-        gap: "10px",
-        height: "100%",
-        minHeight: 0,
-      }}>
-        <CarPanel theme={theme} />
-        <CardsPanel theme={theme} showLiveLocation={false} />
-        <NavPanel theme={theme} />
-      </div>
-    );
-  }
-
-  // 2-panel idle — equal halves.
   return (
     <div style={{
       display: "grid",
-      gridTemplateColumns: "1fr 1fr",
+      gridTemplateColumns: "1fr 1fr 1fr",
       gap: "10px",
       height: "100%",
       minHeight: 0,
     }}>
       <CarPanel theme={theme} />
-      <CardsPanel theme={theme} showLiveLocation={true} />
+      <CenterContent theme={theme} view={view} />
+      <NavPanel theme={theme} />
     </div>
   );
 }
 
 /* =================================================================== */
-/*  Column 1 — Car Details                                             */
+/*  Center column — switches based on active view                       */
+/* =================================================================== */
+function CenterContent({ theme, view }: { theme: Theme; view: ViewMode }) {
+  if (view === "climate") {
+    return (
+      <div style={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
+        <ClimatePanel />
+      </div>
+    );
+  }
+  if (view !== "home") {
+    return <FeaturePanel view={view} />;
+  }
+  return <CardsPanel theme={theme} />;
+}
+
+/* =================================================================== */
+/*  Column 1 — Car panel (always visible, left stays the same)         */
 /* =================================================================== */
 function CarPanel({ theme }: { theme: Theme }) {
   const { speed, setView } = useNav();
@@ -98,7 +95,6 @@ function CarPanel({ theme }: { theme: Theme }) {
         color: theme.text,
       }}
     >
-      {/* Header */}
       <div>
         <div style={{ fontSize: "clamp(16px, 1.5vw, 19px)", fontWeight: 800, color: theme.text }}>
           Ailon 67
@@ -108,7 +104,6 @@ function CarPanel({ theme }: { theme: Theme }) {
         </div>
       </div>
 
-      {/* Speed headline — centered like the reference image */}
       <div style={{ textAlign: "center", marginTop: "4px" }}>
         <span style={{
           fontSize: "clamp(34px, 4.2vw, 56px)",
@@ -122,8 +117,6 @@ function CarPanel({ theme }: { theme: Theme }) {
         }}>km/h</span>
       </div>
 
-      {/* Top-down car (shares TYRE_READINGS — same wheel that's flagged on
-          the cluster shows here, on the homepage). */}
       <div style={{
         flex: 1, minHeight: 0,
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -132,8 +125,6 @@ function CarPanel({ theme }: { theme: Theme }) {
         <TopdownCar theme={theme} />
       </div>
 
-      {/* Small remark — calls out which side has the issue, e.g.
-          "Right rear tyre critical". Empty when all tyres are normal. */}
       {remark && (
         <div style={{
           alignSelf: "center",
@@ -146,39 +137,19 @@ function CarPanel({ theme }: { theme: Theme }) {
         }}>{remark.text}</div>
       )}
 
-      {/* Mode pill — full-width like the reference. */}
+      {/* Mode pill — display only, NOT clickable from dashboard */}
       <div onClick={e => e.stopPropagation()} style={{ display: "flex", justifyContent: "center" }}>
-        <ModeButton theme={theme} />
+        <ModeDisplay theme={theme} />
       </div>
     </div>
   );
 }
 
-function ModeButton({ theme }: { theme: Theme }) {
-  const { mode, setMode } = useNav();
-  const [open, setOpen] = useState(false);
-
-  // Auto-collapse back to the single Mode pill 5 s after the picker opens or
-  // the user changes the selection — keeps the row neat without forcing the
-  // driver to dismiss it.
-  useEffect(() => {
-    if (!open) return;
-    const t = setTimeout(() => setOpen(false), 5000);
-    return () => clearTimeout(t);
-  }, [open, mode]);
-
-  if (open) {
-    // Rendered with width:auto so the parent's `justifyContent: center` can
-    // actually centre the four drive-mode pills.
-    return (
-      <div onClick={e => e.stopPropagation()} style={{ display: "flex", justifyContent: "center" }}>
-        <DriveModeRow theme={theme} mode={mode} setMode={setMode} />
-      </div>
-    );
-  }
+/** Shows the current drive mode as a read-only label. Not interactive. */
+function ModeDisplay({ theme }: { theme: Theme }) {
+  const { mode } = useNav();
   return (
-    <button
-      onClick={() => setOpen(true)}
+    <div
       style={{
         width: "100%",
         background: theme.cardBg,
@@ -187,27 +158,32 @@ function ModeButton({ theme }: { theme: Theme }) {
         padding: "12px",
         color: theme.text,
         fontSize: "13px", fontWeight: 700,
-        cursor: "pointer",
+        textAlign: "center",
         fontFamily: "inherit",
+        userSelect: "none",
       }}
     >
       Mode · {mode}
-    </button>
+    </div>
   );
 }
 
 /* =================================================================== */
-/*  Column 2 — Feature cards                                            */
+/*  Column 2 — Feature cards (home view)                               */
 /* =================================================================== */
-function CardsPanel({ theme, showLiveLocation }: { theme: Theme; showLiveLocation: boolean }) {
-  const { setView, enterNav } = useNav();
+function CardsPanel({ theme }: { theme: Theme }) {
+  const { setView, setFullScreenFeature, enterNav } = useNav();
   const [temperature, setTemperature] = useState(18);
+
+  const open = (v: ViewMode) => { setView(v); };
+  const openFull = (v: ViewMode) => { setView(v); setFullScreenFeature(true); };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px", minHeight: 0 }}>
       {/* Weather */}
       <button
-        onClick={() => setView("weather")}
+        onClick={() => open("weather")}
+        onDoubleClick={() => openFull("weather")}
         style={{
           background: theme.panelBg, borderRadius: "16px",
           border: `1px solid ${theme.border}`, padding: "12px 16px",
@@ -233,7 +209,8 @@ function CardsPanel({ theme, showLiveLocation }: { theme: Theme; showLiveLocatio
 
       {/* Music */}
       <div
-        onClick={() => setView("music")}
+        onClick={() => open("music")}
+        onDoubleClick={() => openFull("music")}
         style={{
           background: theme.panelBg, borderRadius: "16px",
           border: `1px solid ${theme.border}`, padding: "10px",
@@ -268,14 +245,11 @@ function CardsPanel({ theme, showLiveLocation }: { theme: Theme; showLiveLocatio
         </div>
       </div>
 
-      {/* Temperature + Fan tile.
-          Tapping anywhere on the temperature card itself opens the full
-          climate view; the Auto/Cool/Heat buttons (and the temperature
-          slider) stop propagation so they only update local state. The fan
-          tile is fully self-contained and never navigates away. */}
+      {/* Temperature + Fan */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 84px", gap: "10px" }}>
         <div
-          onClick={() => setView("climate")}
+          onClick={() => open("climate")}
+          onDoubleClick={() => openFull("climate")}
           style={{
             background: theme.panelBg, borderRadius: "16px",
             border: `1px solid ${theme.border}`, padding: "12px 14px",
@@ -310,11 +284,9 @@ function CardsPanel({ theme, showLiveLocation }: { theme: Theme; showLiveLocatio
               boxShadow: "0 2px 4px rgba(0,0,0,0.18)",
             }} />
           </div>
-          {/* Single Climate Control button — opens the full climate view.
-              Replaces the old 3-button Auto/Cool/Heat row so the home tile
-              stays a quick shortcut, with full mode control inside. */}
           <button
-            onClick={e => { e.stopPropagation(); setView("climate"); }}
+            onClick={e => { e.stopPropagation(); open("climate"); }}
+            onDoubleClick={e => { e.stopPropagation(); openFull("climate"); }}
             style={{
               marginTop: "8px", width: "100%", padding: "9px",
               background: theme.cardBg,
@@ -331,40 +303,7 @@ function CardsPanel({ theme, showLiveLocation }: { theme: Theme; showLiveLocatio
         <FanTile theme={theme} />
       </div>
 
-      {/* Live Location — only on the main home (no active destination).
-          The whole tile is the tap target; no overlay button needed. */}
-      {showLiveLocation && (
-        <div
-          onClick={() => enterNav()}
-          style={{
-            position: "relative",
-            background: theme.panelBg,
-            borderRadius: "16px",
-            border: `1px solid ${theme.border}`,
-            overflow: "hidden",
-            cursor: "pointer",
-            minHeight: "140px",
-            flex: "0 0 auto",
-          }}
-        >
-          <MiniMap height={0} fill />
-          <div style={{
-            position: "absolute", left: "10px", top: "10px",
-            background: "rgba(0,0,0,0.55)", color: "#fff",
-            padding: "4px 10px", borderRadius: "999px",
-            fontSize: "10px", fontWeight: 700, letterSpacing: "0.3px",
-            display: "flex", alignItems: "center", gap: "6px",
-          }}>
-            <span style={{
-              width: "6px", height: "6px", borderRadius: "50%",
-              background: "#16C47F", boxShadow: "0 0 6px #16C47F",
-            }} />
-            Live Location
-          </div>
-        </div>
-      )}
-
-      {/* 2x3 icon grid */}
+      {/* 2×3 icon grid */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr 1fr",
@@ -374,21 +313,18 @@ function CardsPanel({ theme, showLiveLocation }: { theme: Theme; showLiveLocatio
       }}>
         <WifiTile theme={theme} />
         <BluetoothTile theme={theme} />
-        <IconTile theme={theme} onClick={() => setView("call")}><PhoneIcon /></IconTile>
-        <IconTile theme={theme} onClick={() => setView("apps")}><AppsIcon /></IconTile>
-        <IconTile theme={theme} onClick={() => setView("settings")}><SettingsIcon /></IconTile>
+        <IconTile theme={theme} onClick={() => open("call")} onDblClick={() => openFull("call")}><PhoneIcon /></IconTile>
+        <IconTile theme={theme} onClick={() => open("apps")} onDblClick={() => openFull("apps")}><AppsIcon /></IconTile>
+        <IconTile theme={theme} onClick={() => open("settings")} onDblClick={() => openFull("settings")}><SettingsIcon /></IconTile>
         <LockTile theme={theme} />
       </div>
     </div>
   );
 }
 
-/**
- * Fan tile — 3 vertical bars that light up green to show fan speed.
- * Default state is OFF (empty). A short tap cycles 0 → 1 → 2 → 3 → 1
- * (once on, the level stays on; only a long press turns it back off).
- * Self-contained so it never navigates away.
- */
+/* =================================================================== */
+/*  Fan tile                                                            */
+/* =================================================================== */
 function FanTile({ theme }: { theme: Theme }) {
   const [speed, setSpeed] = useState(0);
   const heldRef = useRef(false);
@@ -403,16 +339,14 @@ function FanTile({ theme }: { theme: Theme }) {
     heldRef.current = false;
     clearTimer();
     timerRef.current = setTimeout(() => {
-      // Long-press → turn the fan off, regardless of current level.
       heldRef.current = true;
       setSpeed(0);
-    }, 550);
+    }, 350);
   };
 
   const handlePointerUp = () => {
     clearTimer();
-    if (heldRef.current) return; // long-press already acted; skip the tap
-    // Short tap: turn on if off, otherwise step through 1 → 2 → 3 → 1.
+    if (heldRef.current) return;
     setSpeed(s => (s === 0 ? 1 : s === 3 ? 1 : s + 1));
   };
 
@@ -463,13 +397,9 @@ function FanTile({ theme }: { theme: Theme }) {
 }
 
 /* =================================================================== */
-/*  Column 3 — Live navigation map                                      */
+/*  Column 3 — Nav map panel                                            */
 /* =================================================================== */
 function NavPanel({ theme }: { theme: Theme }) {
-  // `hasDestination` (not `isNavigating`) is the right trigger: HomePanel
-  // unmounts while the user is actively in full nav mode and re-mounts
-  // when they tap Home. `goHome()` keeps `destinationLabel` set, so this
-  // is how the simple Stop pill becomes visible on the home screen.
   const {
     hasDestination, isNavigating, destinationKey,
     enterNav, pickDestination,
@@ -485,14 +415,28 @@ function NavPanel({ theme }: { theme: Theme }) {
       display: "flex", flexDirection: "column",
       minHeight: 0, background: theme.panelBg,
     }}>
+      {/* Live Location badge — top-left, always visible */}
+      <div style={{
+        position: "absolute", left: "10px", top: "10px",
+        background: "rgba(0,0,0,0.55)", color: "#fff",
+        padding: "4px 10px", borderRadius: "999px",
+        fontSize: "10px", fontWeight: 700, letterSpacing: "0.3px",
+        display: "flex", alignItems: "center", gap: "6px",
+        zIndex: 10,
+        pointerEvents: "none",
+      }}>
+        <span style={{
+          width: "6px", height: "6px", borderRadius: "50%",
+          background: "#16C47F", boxShadow: "0 0 6px #16C47F",
+        }} />
+        Live Location
+      </div>
+
       <div style={{ flex: 1, minHeight: 0, cursor: "pointer" }} onClick={() => enterNav()}>
         <MiniMap height={0} fill />
       </div>
 
-      {/* Top status row — when navigating, this minimised panel shows the
-          same live nav components as the full MapPanel (distance covered,
-          ETA, progress bar) so minimising back to home doesn't lose
-          context. No "Resume route to X" placeholder. */}
+      {/* Progress bar when navigating */}
       {isNavigating && (
         <div style={{
           position: "absolute", top: "10px", left: "10px", right: "10px",
@@ -502,18 +446,15 @@ function NavPanel({ theme }: { theme: Theme }) {
         </div>
       )}
 
-      {/* Bottom action: Stop while navigating, otherwise a hint label.
-          Only show "Tap to open Maps" when there's no destination — once
-          one is picked, tapping the map itself resumes nav. */}
-      <div style={{
-        position: "absolute", bottom: "12px", left: "12px", right: "12px",
-        display: "flex", gap: "8px",
-      }}>
-        {isNavigating ? (
+      {/* Bottom action — Stop while navigating only. No "Tap to open Maps" button. */}
+      {isNavigating && (
+        <div style={{
+          position: "absolute", bottom: "12px", left: "12px", right: "12px",
+        }}>
           <button
             onClick={e => { e.stopPropagation(); pickDestination(null); }}
             style={{
-              flex: 1,
+              width: "100%",
               background: "#F93827",
               border: "none", borderRadius: "12px",
               padding: "12px",
@@ -526,30 +467,14 @@ function NavPanel({ theme }: { theme: Theme }) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
             Stop Navigation
           </button>
-        ) : !hasDestination && (
-          <button
-            onClick={() => enterNav()}
-            style={{
-              flex: 1,
-              background: theme.panelBg,
-              border: `1px solid ${theme.border}`,
-              borderRadius: "12px",
-              padding: "10px",
-              color: theme.text, fontSize: "12px", fontWeight: 700,
-              cursor: "pointer", fontFamily: "inherit",
-            }}
-          >
-            Tap to open Maps
-          </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
 /* =================================================================== */
-/*  Tyre remark for car panel — flags which side has the issue.        */
-/*  Worst-of-all selection: critical beats low, then RR/RL/FR/FL.      */
+/*  Tyre remark                                                         */
 /* =================================================================== */
 function tyreRemark(theme: Theme): { text: string; color: string } | null {
   const labels: Record<TyrePosition, string> = {
@@ -571,18 +496,19 @@ function tyreRemark(theme: Theme): { text: string; color: string } | null {
 }
 
 /* =================================================================== */
-/*  Helpers and shared icons                                            */
+/*  Icon tiles (wifi / bluetooth / generic)                            */
 /* =================================================================== */
-function transportBtn(theme: Theme): React.CSSProperties {
-  return { background: "transparent", border: "none", cursor: "pointer", color: theme.text, padding: "2px" };
-}
-
-function IconTile({ theme, onClick, active, children }: {
-  theme: Theme; onClick: () => void; active?: boolean; children: React.ReactNode;
+function IconTile({ theme, onClick, onDblClick, active, children }: {
+  theme: Theme;
+  onClick: () => void;
+  onDblClick?: () => void;
+  active?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <button
       onClick={onClick}
+      onDoubleClick={onDblClick}
       style={{
         background: active ? `${theme.success}22` : theme.panelBg,
         border: `1px solid ${active ? theme.success : theme.border}`,
@@ -608,14 +534,15 @@ function LockTile({ theme }: { theme: Theme }) {
 
 function WifiTile({ theme }: { theme: Theme }) {
   const { setView } = useNav();
-  const [on, setOn] = useState(true);
+  // Default OFF
+  const [on, setOn] = useState(false);
   const heldRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
   const handlePointerDown = () => {
     heldRef.current = false;
     clearTimer();
-    timerRef.current = setTimeout(() => { heldRef.current = true; setView("wifi"); }, 1500);
+    timerRef.current = setTimeout(() => { heldRef.current = true; setView("wifi"); }, 600);
   };
   const handlePointerUp = () => {
     clearTimer();
@@ -644,14 +571,15 @@ function WifiTile({ theme }: { theme: Theme }) {
 
 function BluetoothTile({ theme }: { theme: Theme }) {
   const { setView } = useNav();
-  const [on, setOn] = useState(true);
+  // Default OFF
+  const [on, setOn] = useState(false);
   const heldRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
   const handlePointerDown = () => {
     heldRef.current = false;
     clearTimer();
-    timerRef.current = setTimeout(() => { heldRef.current = true; setView("bluetooth"); }, 1500);
+    timerRef.current = setTimeout(() => { heldRef.current = true; setView("bluetooth"); }, 600);
   };
   const handlePointerUp = () => {
     clearTimer();
@@ -678,11 +606,12 @@ function BluetoothTile({ theme }: { theme: Theme }) {
   );
 }
 
+/* =================================================================== */
+/*  Shared icons                                                        */
+/* =================================================================== */
 function WifiIcon()      { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><circle cx="12" cy="20" r="1" fill="currentColor" /></svg>; }
 function BluetoothIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5" /></svg>; }
 function FanIcon({ spinning = false }: { spinning?: boolean } = {}) {
-  // Proper four-blade fan: a small central hub with curved paddle blades.
-  // When spinning is true (fan on) the whole glyph slowly rotates.
   return (
     <svg
       width="26" height="26" viewBox="0 0 24 24" fill="currentColor"
@@ -713,9 +642,7 @@ function LockIcon({ locked = true }: { locked?: boolean }) {
 }
 
 /* =================================================================== */
-/*  Top-down car (shared visual language with the meter cluster).      */
-/*  Reads TYRE_READINGS so the same wheel that's flagged on the meter  */
-/*  glows here on the home screen.                                     */
+/*  Top-down car SVG                                                    */
 /* =================================================================== */
 export function HomeCar({ theme }: { theme: Theme }) {
   return <TopdownCar theme={theme} />;
@@ -777,4 +704,8 @@ function TopdownCar({ theme }: { theme: Theme }) {
       </g>
     </svg>
   );
+}
+
+function transportBtn(theme: Theme): React.CSSProperties {
+  return { background: "transparent", border: "none", cursor: "pointer", color: theme.text, padding: "2px" };
 }

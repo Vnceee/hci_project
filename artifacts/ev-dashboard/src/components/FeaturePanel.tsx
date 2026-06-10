@@ -548,7 +548,7 @@ function SettingsView({ theme }: { theme: Theme }) {
 /* ============================ Wi-Fi ============================ */
 
 function WifiView({ theme }: { theme: Theme }) {
-  const [on, setOn] = useState(true);
+  const [on, setOn] = useState(false);
   return (
     <div>
       <Section theme={theme}>
@@ -572,7 +572,7 @@ function WifiView({ theme }: { theme: Theme }) {
 /* ============================ Bluetooth ============================ */
 
 function BluetoothView({ theme }: { theme: Theme }) {
-  const [on, setOn] = useState(true);
+  const [on, setOn] = useState(false);
   return (
     <div>
       <Section theme={theme}>

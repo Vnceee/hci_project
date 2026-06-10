@@ -54,26 +54,26 @@ export default function CarPanel() {
         <CarWithRing theme={theme} />
       </div>
 
-      {/* Mode button */}
-      <button
+      {/* Mode display — non-interactive */}
+      <div
         onClick={e => e.stopPropagation()}
         style={{
           width: "100%",
           background: theme.mode === "night" ? "#f0f0f0" : "#1a1d26",
-          border: "none",
           borderRadius: "14px",
           padding: "13px 0",
           color: theme.mode === "night" ? "#1a1d26" : "#f0f0f0",
           fontSize: "14px",
-          cursor: "pointer",
           fontWeight: 600,
           letterSpacing: "0.03em",
           marginTop: "8px",
           flexShrink: 0,
+          textAlign: "center",
+          userSelect: "none",
         }}
       >
         Mode
-      </button>
+      </div>
     </div>
   );
 }

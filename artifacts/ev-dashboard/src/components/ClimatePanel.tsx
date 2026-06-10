@@ -7,7 +7,8 @@ type Mode = "preset" | "auto" | "rain";
 
 export default function ClimatePanel() {
   const { theme } = useTheme();
-  const [acOn, setAcOn] = useState(true);
+  // Default OFF
+  const [acOn, setAcOn] = useState(false);
   const [temp, setTemp] = useState(22);
   const [fanSpeed, setFanSpeed] = useState(2);
   const [airFlow, setAirFlow] = useState<AirFlow>("face");
@@ -31,11 +32,11 @@ export default function ClimatePanel() {
     >
       <div style={{ fontSize: "20px", fontWeight: 800, color: theme.text }}>Climate Control</div>
 
-      {/* AC On toggle */}
+      {/* AC On/Off toggle */}
       <button
         onClick={() => setAcOn(v => !v)}
         style={{
-          background: acOn ? theme.btnActive : theme.cardBg,
+          background: acOn ? `${theme.accent}22` : theme.cardBg,
           border: `1px solid ${acOn ? theme.accent : theme.border}`,
           borderRadius: "20px",
           padding: "7px 18px",
@@ -53,7 +54,7 @@ export default function ClimatePanel() {
         AC {acOn ? "On" : "Off"}
       </button>
 
-      {/* Temperature — large +/− controls AND a draggable slider */}
+      {/* Temperature */}
       <Section theme={theme} title="Temperature">
         <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
           <RoundBtn theme={theme} onClick={() => setTemp(t => Math.max(16, t - 1))}>−</RoundBtn>
@@ -116,7 +117,7 @@ export default function ClimatePanel() {
               onClick={() => setFanSpeed(n)}
               style={{
                 width: "46px", height: "46px",
-                background: fanSpeed === n ? theme.btnActive : theme.cardBg,
+                background: fanSpeed === n ? `${theme.accent}22` : theme.cardBg,
                 border: `1px solid ${fanSpeed === n ? theme.accent : theme.border}`,
                 borderRadius: "12px",
                 color: fanSpeed === n ? theme.accent : theme.text,
@@ -197,7 +198,7 @@ function IconBtn({ children, active, theme, onClick }: { children: React.ReactNo
   return (
     <button onClick={onClick} style={{
       width: "44px", height: "44px",
-      background: active ? theme.btnActive : theme.cardBg,
+      background: active ? `${theme.accent}22` : theme.cardBg,
       border: `1px solid ${active ? theme.accent : theme.border}`,
       borderRadius: "12px",
       color: active ? theme.accent : theme.textSub,
@@ -219,7 +220,7 @@ function ModeBtn({ children, active, theme, onClick, label }: {
     }}>
       <div style={{
         width: "48px", height: "48px",
-        background: active ? theme.btnActive : theme.cardBg,
+        background: active ? `${theme.accent}22` : theme.cardBg,
         border: `1px solid ${active ? theme.accent : theme.border}`,
         borderRadius: "12px",
         color: active ? theme.accent : theme.text,
@@ -231,7 +232,6 @@ function ModeBtn({ children, active, theme, onClick, label }: {
 }
 
 function AirFlowIcon({ kind }: { kind: AirFlow }) {
-  // Simple car-with-arrows pictograms
   const car = <path d="M4 18 L6 14 L18 14 L20 18 Z" fill="currentColor" />;
   const arrowFeet = <path d="M8 22 L8 19 M12 22 L12 19 M16 22 L16 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />;
   const arrowFace = <path d="M8 11 L8 8 M12 11 L12 8 M16 11 L16 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />;

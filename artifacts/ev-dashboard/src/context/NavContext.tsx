@@ -23,16 +23,11 @@ export type TyrePosition = "FL" | "FR" | "RL" | "RR";
 export type TyreState = "normal" | "low" | "critical";
 export interface TyreReading { position: TyrePosition; psi: number; }
 
-/**
- * Single source of truth for tyre PSI. Every view that draws a car —
- * HomePanel, CarDetails, MeterDashboard cluster, TyreStatus — reads
- * from this so the same wheel always lights up across screens.
- */
 export const TYRE_READINGS: TyreReading[] = [
-  { position: "FL", psi: 26 }, // low → yellow (only warning)
-  { position: "FR", psi: 32 }, // normal
-  { position: "RL", psi: 33 }, // normal
-  { position: "RR", psi: 32 }, // normal
+  { position: "FL", psi: 26 },
+  { position: "FR", psi: 32 },
+  { position: "RL", psi: 33 },
+  { position: "RR", psi: 32 },
 ];
 
 export function classifyTyre(psi: number): TyreState {
@@ -41,12 +36,6 @@ export function classifyTyre(psi: number): TyreState {
   return "normal";
 }
 
-/**
- * Destinations shared across MapPanel and MiniMap. Lifting these here
- * means the home-screen MiniMap can draw the same waypoint highlight
- * the full nav view shows — even after the user navigates home and the
- * MapPanel local state is destroyed.
- */
 export type DestKey = "pohonmasCafe" | "vivacity" | "megalanes";
 export interface DestLocation { lat: number; lng: number; name: string; time?: string; dist?: string; }
 export const HERE_LATLNG: [number, number] = [1.5587, 110.3543];
@@ -71,6 +60,11 @@ type NavContextValue = {
   goHome: () => void;
   back: () => void;
 
+  // When true the active feature view fills the full width (no left CarPanel).
+  // Set by double-clicking a feature card; cleared on goHome/back.
+  fullScreenFeature: boolean;
+  setFullScreenFeature: (v: boolean) => void;
+
   mapHidden: boolean;
   toggleMap: () => void;
   hideMap: () => void;
@@ -80,7 +74,6 @@ type NavContextValue = {
   sleep: () => void;
   wake: () => void;
 
-  // Shared car state — written by the meter cluster, read everywhere else
   gear: Gear;
   setGear: (g: Gear) => void;
   mode: DriveMode;
@@ -90,35 +83,20 @@ type NavContextValue = {
   brake: boolean;
   setBrake: (b: boolean) => void;
 
-  // Live speed driven by the cluster pedals. Read by every other view
-  // that displays "km/h" so the headline number is the same everywhere.
   speed: number;
   setSpeed: (n: number | ((prev: number) => number)) => void;
 
-  // Static for now, but lifted so every view shows the same battery /
-  // range numbers.
   batteryPct: number;
   kmLeft: number;
 
-  // Whether the user has chosen a destination. Switches the home layout
-  // from the new combined view to the legacy CarPanel + CenterPanel +
-  // MapPanel arrangement so the user can actively navigate.
   hasDestination: boolean;
   destinationLabel: string | null;
   destinationKey: DestKey | null;
   pickDestination: (key: DestKey | null) => void;
 
-  // 0..1 progress along the active route. Drives the live "car moving on
-  // route" animation in both the full MapPanel (rotation + recenter) and
-  // the minimised NavPanel progress bar so the two stay in sync.
   navProgress: number;
 };
 
-/**
- * Build the same 4-point route polyline both maps draw. Exported so the
- * MapPanel auto-rotate effect can compute the user's current position and
- * heading from the same source of truth.
- */
 export function buildRoutePoints(destKey: DestKey): [number, number][] {
   const dest = DEST_LOCATIONS[destKey];
   const [hLat, hLng] = HERE_LATLNG;
@@ -135,10 +113,12 @@ const NavContext = createContext<NavContextValue | null>(null);
 export function NavProvider({ children }: { children: ReactNode }) {
   const [navMode, setNavMode] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-  const [view, setView] = useState<ViewMode>("home");
+  const [view, setViewRaw] = useState<ViewMode>("home");
   const [mapHidden, setMapHidden] = useState(false);
   const [sleeping, setSleeping] = useState(false);
-  const [panelLayout, setPanelLayout] = useState<"2" | "3">("2");
+  // Default to 3-panel layout so the nav map is visible on home
+  const [panelLayout, setPanelLayout] = useState<"2" | "3">("3");
+  const [fullScreenFeature, setFullScreenFeature] = useState(false);
 
   const [gear, setGear] = useState<Gear>("D");
   const [mode, setMode] = useState<DriveMode>("Auto");
@@ -149,9 +129,6 @@ export function NavProvider({ children }: { children: ReactNode }) {
   const [destinationKey, setDestinationKey] = useState<DestKey | null>(null);
   const [navProgress, setNavProgress] = useState(0);
 
-  // Animate progress along the active route while navigating. ~90 s for a
-  // full traversal — same pace the old TopProgressBar used so the ETA
-  // numbers still feel right.
   useEffect(() => {
     if (!isNavigating || !destinationKey) { setNavProgress(0); return; }
     const id = setInterval(() => {
@@ -160,16 +137,28 @@ export function NavProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id);
   }, [isNavigating, destinationKey]);
 
-  const goHome = () => { setView("home"); setNavMode(false); setMapHidden(false); };
+  const setView = (v: ViewMode) => {
+    setViewRaw(v);
+    // Leaving a feature view resets full-screen mode
+    if (v === "home") setFullScreenFeature(false);
+  };
+
+  const goHome = () => {
+    setViewRaw("home");
+    setNavMode(false);
+    setMapHidden(false);
+    setFullScreenFeature(false);
+  };
+
   const back = () => {
+    if (fullScreenFeature) { setFullScreenFeature(false); return; }
     if (navMode) { setNavMode(false); return; }
-    if (view === "tyres" || view === "charging") { setView("car-details"); return; }
+    if (view === "tyres" || view === "charging") { setViewRaw("car-details"); return; }
     goHome();
   };
 
   const pickDestination = (key: DestKey | null) => {
     setDestinationKey(key);
-    // Reset nav state when destination is cleared.
     if (!key) { setNavMode(false); setIsNavigating(false); }
   };
 
@@ -184,6 +173,8 @@ export function NavProvider({ children }: { children: ReactNode }) {
       panelLayout, setPanelLayout,
 
       view, setView, goHome, back,
+
+      fullScreenFeature, setFullScreenFeature,
 
       mapHidden,
       toggleMap: () => setMapHidden(h => !h),
