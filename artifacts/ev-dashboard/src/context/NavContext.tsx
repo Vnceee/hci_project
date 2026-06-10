@@ -86,6 +86,11 @@ type NavContextValue = {
   speed: number;
   setSpeed: (n: number | ((prev: number) => number)) => void;
 
+  wifiOn: boolean;
+  setWifiOn: (v: boolean) => void;
+  bluetoothOn: boolean;
+  setBluetoothOn: (v: boolean) => void;
+
   batteryPct: number;
   kmLeft: number;
 
@@ -125,6 +130,8 @@ export function NavProvider({ children }: { children: ReactNode }) {
   const [signal, setSignal] = useState<Signal>("off");
   const [brake, setBrake] = useState(false);
   const [speed, setSpeed] = useState(0);
+  const [wifiOn, setWifiOn] = useState(false);
+  const [bluetoothOn, setBluetoothOn] = useState(false);
 
   const [destinationKey, setDestinationKey] = useState<DestKey | null>(null);
   const [navProgress, setNavProgress] = useState(0);
@@ -190,6 +197,8 @@ export function NavProvider({ children }: { children: ReactNode }) {
       signal, setSignal,
       brake, setBrake,
       speed, setSpeed,
+      wifiOn, setWifiOn,
+      bluetoothOn, setBluetoothOn,
 
       batteryPct: 23,
       kmLeft: 167,

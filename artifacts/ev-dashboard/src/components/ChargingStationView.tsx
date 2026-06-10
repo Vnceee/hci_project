@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTheme, type Theme } from "@/context/ThemeContext";
+import { HERE_LATLNG } from "@/context/NavContext";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -328,6 +329,16 @@ function StationsMap({ theme, stations, selectedId, onSelect }: {
     tileRef.current = L.tileLayer(url, { maxZoom: 19 }).addTo(map);
     mapRef.current = map;
 
+    // User location marker (blue dot)
+    const userIcon = L.divIcon({
+      html: `<div style="position:relative;width:18px;height:18px;display:flex;align-items:center;justify-content:center;">
+        <div style="position:absolute;width:34px;height:34px;border-radius:50%;background:rgba(74,142,255,0.2);top:-8px;left:-8px;"></div>
+        <div style="width:18px;height:18px;background:#4a8eff;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(74,142,255,0.6);position:relative;z-index:1;"></div>
+      </div>`,
+      iconSize: [18, 18], iconAnchor: [9, 9], className: "",
+    });
+    L.marker(HERE_LATLNG, { icon: userIcon }).addTo(map);
+
     return () => { map.remove(); mapRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -404,30 +415,52 @@ function StationsMap({ theme, stations, selectedId, onSelect }: {
         <div style={{ fontSize: "8px", color: theme.textSub, fontWeight: 600, marginTop: "1px" }}>CHARGING HUB</div>
       </div>
 
-      {/* Zoom controls */}
+      {/* Map controls — matching MapPanel style */}
       <div style={{
-        position: "absolute", right: "10px", top: "10px",
-        display: "flex", flexDirection: "column", gap: "4px", zIndex: 500,
+        position: "absolute", right: "12px", top: "12px",
+        display: "flex", flexDirection: "column", gap: "6px", zIndex: 500,
       }}>
-        <ZoomBtn theme={theme} onClick={() => mapRef.current?.zoomIn()}>+</ZoomBtn>
-        <ZoomBtn theme={theme} onClick={() => mapRef.current?.zoomOut()}>−</ZoomBtn>
+        {/* Center on user location */}
+        <MapCtrlBtn theme={theme} onClick={() => mapRef.current?.flyTo(HERE_LATLNG, 13, { duration: 0.8 })}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+          </svg>
+        </MapCtrlBtn>
+
+        {/* Zoom in */}
+        <MapCtrlBtn theme={theme} onClick={() => mapRef.current?.zoomIn()}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </MapCtrlBtn>
+
+        {/* Zoom out */}
+        <MapCtrlBtn theme={theme} onClick={() => mapRef.current?.zoomOut()}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </MapCtrlBtn>
       </div>
     </div>
   );
 }
 
-function ZoomBtn({ children, theme, onClick }: { children: React.ReactNode; theme: Theme; onClick?: () => void }) {
+function MapCtrlBtn({ children, theme, onClick }: { children: React.ReactNode; theme: Theme; onClick?: () => void }) {
   return (
     <button
       onClick={onClick}
       style={{
-        width: "28px", height: "28px",
-        background: theme.panelBg,
+        width: "44px", height: "36px",
+        background: theme.mode === "night" ? "rgba(18,20,36,0.88)" : "rgba(255,255,255,0.9)",
+        backdropFilter: "blur(10px)",
         border: `1px solid ${theme.border}`,
-        borderRadius: "6px",
-        color: theme.text, fontSize: "14px", fontWeight: 700,
-        cursor: "pointer", lineHeight: 1,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+        borderRadius: "12px",
+        color: theme.text,
+        cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+        transition: "background 0.15s",
       }}
     >{children}</button>
   );

@@ -562,7 +562,8 @@ function LocationChips({ theme, destination, setDestination, compact }: {
         return (
           <button
             key={key}
-            onClick={() => setDestination(isSelected ? null : key)}
+            onClick={(e) => { e.stopPropagation(); setDestination(isSelected ? null : key); }}
+            onDoubleClick={(e) => { e.stopPropagation(); setDestination(null); }}
             style={{
               flex: 1, minWidth: 0,
               background: theme.mode === "night" ? "rgba(24,27,38,0.95)" : "rgba(255,255,255,0.97)",

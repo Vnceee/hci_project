@@ -87,7 +87,7 @@ function CenterContent({ theme, view }: { theme: Theme; view: ViewMode }) {
 /*  Column 1 — Car panel with SIDE VIEW + energy bar                   */
 /* =================================================================== */
 function CarPanel({ theme }: { theme: Theme }) {
-  const { speed, gear, batteryPct, kmLeft, mode, setMode, setView } = useNav();
+  const { speed, gear, batteryPct, kmLeft, mode, setView } = useNav();
   const remark = tyreRemark(theme);
 
   return (
@@ -113,30 +113,29 @@ function CarPanel({ theme }: { theme: Theme }) {
         overflow: "hidden",
       }}
     >
-      {/* Header row: name + gear badge + speed */}
+      {/* Header row: [name + edition + gear] left | [speed] right */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexShrink: 0 }}>
-        <div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
           <div style={{ fontSize: "clamp(14px, 1.3vw, 17px)", fontWeight: 800, color: theme.text }}>Ailon 67</div>
-          <div style={{ fontSize: "10px", color: theme.textMuted, marginTop: "1px" }}>2030 Ailon Edition</div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {/* Gear indicator */}
+          <div style={{ fontSize: "10px", color: theme.textMuted }}>2030 Ailon Edition</div>
+          {/* Gear indicator below name */}
           <div style={{
-            width: "34px", height: "34px",
+            marginTop: "5px",
+            width: "32px", height: "32px",
             background: gear === "R" ? `${theme.danger}22` : `${theme.accent}22`,
             border: `2px solid ${gear === "R" ? theme.danger : theme.accent}`,
-            borderRadius: "10px",
+            borderRadius: "9px",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "16px", fontWeight: 900,
+            fontSize: "15px", fontWeight: 900,
             color: gear === "R" ? theme.danger : theme.accent,
           }}>{gear}</div>
-          {/* Speed */}
-          <div style={{ textAlign: "right" }}>
-            <span style={{ fontSize: "clamp(22px, 2.5vw, 30px)", fontWeight: 900, color: theme.text, letterSpacing: "-0.5px" }}>
-              {Math.round(speed)}
-            </span>
-            <div style={{ fontSize: "10px", color: theme.textMuted, fontWeight: 700, marginTop: "1px" }}>km/h</div>
-          </div>
+        </div>
+        {/* Speed */}
+        <div style={{ textAlign: "right" }}>
+          <span style={{ fontSize: "clamp(22px, 2.5vw, 30px)", fontWeight: 900, color: theme.text, letterSpacing: "-0.5px" }}>
+            {Math.round(speed)}
+          </span>
+          <div style={{ fontSize: "10px", color: theme.textMuted, fontWeight: 700, marginTop: "1px" }}>km/h</div>
         </div>
       </div>
 
@@ -181,25 +180,24 @@ function CarPanel({ theme }: { theme: Theme }) {
         </div>
       </div>
 
-      {/* Drive mode selector */}
+      {/* Drive mode display — read-only, reflects current mode */}
       <div
-        style={{ display: "flex", gap: "6px", flexShrink: 0 }}
+        style={{ display: "flex", gap: "6px", flexShrink: 0, pointerEvents: "none" }}
         onClick={e => e.stopPropagation()}
       >
         {(["Auto", "Eco", "Normal", "Sport"] as const).map(m => {
           const active = m === mode;
           return (
-            <button key={m} onClick={() => setMode(m)} style={{
+            <div key={m} style={{
               flex: 1, padding: "7px 4px",
               background: active ? theme.success : theme.cardBg,
               border: `1px solid ${active ? theme.success : theme.border}`,
               borderRadius: "10px",
               color: active ? "#fff" : theme.textSub,
               fontSize: "11px", fontWeight: 700,
-              cursor: "pointer", fontFamily: "inherit",
+              textAlign: "center",
               boxShadow: active ? `0 3px 10px ${theme.success}55` : "none",
-              transition: "all 0.15s",
-            }}>{m}</button>
+            }}>{m}</div>
           );
         })}
       </div>
@@ -490,117 +488,49 @@ function FanTile({ theme }: { theme: Theme }) {
 }
 
 /* =================================================================== */
-/*  Side-view car SVG                                                   */
+/*  Side-view car — simple rectangles + circles, no glow lines         */
 /* =================================================================== */
 function SideViewCar({ theme }: { theme: Theme }) {
   const isDark = theme.mode === "night";
-
-  const spoke = (cx: number, cy: number) =>
-    [0, 60, 120, 180, 240, 300].map(deg => {
-      const r = deg * Math.PI / 180;
-      return (
-        <line key={deg}
-          x1={cx + 11 * Math.sin(r)} y1={cy - 11 * Math.cos(r)}
-          x2={cx + 19 * Math.sin(r)} y2={cy - 19 * Math.cos(r)}
-          stroke={isDark ? "#38405e" : "#484866"} strokeWidth="3.5" strokeLinecap="round" />
-      );
-    });
+  const body  = isDark ? "#c8d4e8" : "#d4dff5";
+  const cab   = isDark ? "#9aacc8" : "#a8bace";
+  const glass = isDark ? "rgba(145,175,235,0.5)" : "rgba(155,190,248,0.6)";
+  const wheel = isDark ? "#16192c" : "#20233a";
+  const hub   = isDark ? "#353852" : "#424566";
+  const hubDot = isDark ? "#555e80" : "#666880";
 
   return (
-    <svg viewBox="0 0 420 185" width="100%" style={{ maxHeight: "100%", display: "block", overflow: "visible" }} preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <linearGradient id="sv-body" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={isDark ? "#d8e4f8" : "#e4eeff"} />
-          <stop offset="55%" stopColor={isDark ? "#bccae0" : "#ccd8f4"} />
-          <stop offset="100%" stopColor={isDark ? "#a6b6d0" : "#b6c6e2"} />
-        </linearGradient>
-        <linearGradient id="sv-roof" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={isDark ? "#8898bc" : "#98a8cc"} />
-          <stop offset="100%" stopColor={isDark ? "#607092" : "#7080a2"} />
-        </linearGradient>
-        <radialGradient id="sv-wheel" cx="50%" cy="35%" r="70%">
-          <stop offset="0%" stopColor={isDark ? "#252840" : "#323558"} />
-          <stop offset="100%" stopColor={isDark ? "#16192c" : "#1e2136"} />
-        </radialGradient>
-        <filter id="sv-drop">
-          <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor={isDark ? "rgba(61,83,255,0.18)" : "rgba(61,83,255,0.1)"} />
-        </filter>
-      </defs>
-
-      {/* Underbody glow */}
-      <ellipse cx="208" cy="170" rx="152" ry="9" fill="#16C47F" opacity={isDark ? 0.22 : 0.14} style={{ filter: "blur(7px)" }} />
-
-      {/* Car body */}
-      <g filter="url(#sv-drop)">
-        {/* Main body shape */}
-        <path d="
-          M 46 132 L 46 107 Q 48 95 62 84
-          L 98 54 Q 118 38 162 34
-          L 252 32 Q 296 32 328 50
-          Q 354 65 364 90 L 368 108 L 368 132
-          Q 342 140 210 142 Q 78 142 46 132 Z
-        " fill="url(#sv-body)" />
-
-        {/* Roof */}
-        <path d="
-          M 116 78 Q 132 36 164 32 L 252 30
-          Q 296 30 325 50 L 328 52
-          Q 296 34 252 34 L 162 36
-          Q 130 40 114 80 Z
-        " fill="url(#sv-roof)" />
-
-        {/* Windshield glass */}
-        <path d="M 118 79 L 162 34 L 167 37 L 122 82 Z"
-          fill={isDark ? "rgba(180,208,255,0.48)" : "rgba(185,215,255,0.58)"} />
-
-        {/* Side window strip */}
-        <path d="M 168 35 L 252 33 L 252 73 L 168 75 Z"
-          fill={isDark ? "rgba(158,185,240,0.38)" : "rgba(168,198,252,0.48)"} />
-
-        {/* Rear window */}
-        <path d="M 254 33 L 326 52 L 317 73 L 254 73 Z"
-          fill={isDark ? "rgba(158,185,240,0.38)" : "rgba(168,198,252,0.48)"} />
-
-        {/* A-pillar / window divider */}
-        <line x1="254" y1="33" x2="254" y2="74" stroke={isDark ? "rgba(80,100,145,0.55)" : "rgba(100,120,165,0.5)"} strokeWidth="2" />
-
-        {/* Body highlight */}
-        <path d="M 68 106 Q 208 112 358 106" stroke="rgba(255,255,255,0.14)" strokeWidth="1.5" fill="none" />
-
-        {/* Front headlight */}
-        <path d="M 46 96 L 56 89 L 54 110 L 46 113 Z" fill="#ffd060" opacity="0.95" />
-        <ellipse cx="46" cy="102" rx="8" ry="10" fill="rgba(255,215,80,0.25)" style={{ filter: "blur(4px)" }} />
-
-        {/* Rear light strip */}
-        <rect x="362" y="94" width="9" height="28" rx="2" fill="#ff3344" opacity="0.9" />
-        <rect x="360" y="92" width="11" height="32" rx="2" fill="#ff3344" opacity="0.28" style={{ filter: "blur(5px)" }} />
-      </g>
-
-      {/* Front wheel arch */}
-      <path d="M 70 140 Q 72 143 112 143 Q 152 143 154 140 L 150 132 Q 138 122 112 122 Q 86 122 74 132 Z"
-        fill={isDark ? "#1a1d2e" : "#282b40"} />
-
+    <svg viewBox="0 0 300 108" width="100%" style={{ maxHeight: "100%", display: "block" }} preserveAspectRatio="xMidYMid meet">
       {/* Front wheel */}
-      <circle cx="112" cy="148" r="26" fill={isDark ? "#16192a" : "#22253a"} />
-      <circle cx="112" cy="148" r="22" fill="url(#sv-wheel)" />
-      <circle cx="112" cy="148" r="10" fill={isDark ? "#282c44" : "#363a54"} />
-      {spoke(112, 148)}
-      <circle cx="112" cy="148" r="4" fill={isDark ? "#484e72" : "#585e7a"} />
-
-      {/* Rear wheel arch */}
-      <path d="M 264 140 Q 266 143 305 143 Q 344 143 346 140 L 342 132 Q 330 122 305 122 Q 280 122 268 132 Z"
-        fill={isDark ? "#1a1d2e" : "#282b40"} />
+      <circle cx="72" cy="88" r="20" fill={wheel} />
+      <circle cx="72" cy="88" r="11" fill={hub} />
+      <circle cx="72" cy="88" r="4"  fill={hubDot} />
 
       {/* Rear wheel */}
-      <circle cx="305" cy="148" r="26" fill={isDark ? "#16192a" : "#22253a"} />
-      <circle cx="305" cy="148" r="22" fill="url(#sv-wheel)" />
-      <circle cx="305" cy="148" r="10" fill={isDark ? "#282c44" : "#363a54"} />
-      {spoke(305, 148)}
-      <circle cx="305" cy="148" r="4" fill={isDark ? "#484e72" : "#585e7a"} />
+      <circle cx="228" cy="88" r="20" fill={wheel} />
+      <circle cx="228" cy="88" r="11" fill={hub} />
+      <circle cx="228" cy="88" r="4"  fill={hubDot} />
 
-      {/* Green underbody line */}
-      <path d="M 62 165 L 360 165" stroke="#16C47F" strokeWidth="2" strokeLinecap="round" opacity="0.65" />
-      <path d="M 62 165 L 360 165" stroke="#16C47F" strokeWidth="8" strokeLinecap="round" opacity="0.18" style={{ filter: "blur(3px)" }} />
+      {/* Main body */}
+      <rect x="16" y="50" width="268" height="46" rx="9" fill={body} />
+
+      {/* Cab */}
+      <rect x="70" y="14" width="155" height="38" rx="7" fill={cab} />
+
+      {/* Front window */}
+      <rect x="77" y="18" width="64" height="30" rx="4" fill={glass} />
+
+      {/* Rear window */}
+      <rect x="151" y="18" width="65" height="30" rx="4" fill={glass} />
+
+      {/* Pillar between windows */}
+      <rect x="146" y="18" width="5" height="30" fill={cab} />
+
+      {/* Headlight */}
+      <rect x="12" y="67" width="9" height="16" rx="3" fill="#ffd060" />
+
+      {/* Taillight */}
+      <rect x="279" y="67" width="9" height="16" rx="3" fill="#ff4455" />
     </svg>
   );
 }
@@ -651,27 +581,26 @@ function LockTile({ theme }: { theme: Theme }) {
 }
 
 function WifiTile({ theme }: { theme: Theme }) {
-  const { setView } = useNav();
-  const [on, setOn] = useState(false);
-  const heldRef = useRef(false);
+  const { setView, wifiOn, setWifiOn } = useNav();
+  const heldRef  = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
   const handlePointerDown = () => {
     heldRef.current = false; clearTimer();
     timerRef.current = setTimeout(() => { heldRef.current = true; setView("wifi"); }, 600);
   };
-  const handlePointerUp = () => { clearTimer(); if (heldRef.current) return; setOn(v => !v); };
+  const handlePointerUp = () => { clearTimer(); if (heldRef.current) return; setWifiOn(!wifiOn); };
   const handlePointerLeave = () => { clearTimer(); heldRef.current = false; };
   return (
     <button
       onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave} onPointerCancel={handlePointerLeave}
       style={{
-        background: on ? `${theme.success}22` : theme.panelBg,
-        border: `1px solid ${on ? theme.success : theme.border}`,
+        background: wifiOn ? `${theme.success}22` : theme.panelBg,
+        border: `1px solid ${wifiOn ? theme.success : theme.border}`,
         borderRadius: "14px", display: "flex", alignItems: "center",
         justifyContent: "center", cursor: "pointer",
-        color: on ? theme.success : theme.textSub,
+        color: wifiOn ? theme.success : theme.textSub,
         minHeight: "44px", width: "100%", height: "100%",
         transition: "background 0.18s, border-color 0.18s, color 0.18s",
         touchAction: "manipulation", userSelect: "none",
@@ -681,27 +610,26 @@ function WifiTile({ theme }: { theme: Theme }) {
 }
 
 function BluetoothTile({ theme }: { theme: Theme }) {
-  const { setView } = useNav();
-  const [on, setOn] = useState(false);
-  const heldRef = useRef(false);
+  const { setView, bluetoothOn, setBluetoothOn } = useNav();
+  const heldRef  = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
   const handlePointerDown = () => {
     heldRef.current = false; clearTimer();
     timerRef.current = setTimeout(() => { heldRef.current = true; setView("bluetooth"); }, 600);
   };
-  const handlePointerUp = () => { clearTimer(); if (heldRef.current) return; setOn(v => !v); };
+  const handlePointerUp = () => { clearTimer(); if (heldRef.current) return; setBluetoothOn(!bluetoothOn); };
   const handlePointerLeave = () => { clearTimer(); heldRef.current = false; };
   return (
     <button
       onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave} onPointerCancel={handlePointerLeave}
       style={{
-        background: on ? `${theme.success}22` : theme.panelBg,
-        border: `1px solid ${on ? theme.success : theme.border}`,
+        background: bluetoothOn ? `${theme.success}22` : theme.panelBg,
+        border: `1px solid ${bluetoothOn ? theme.success : theme.border}`,
         borderRadius: "14px", display: "flex", alignItems: "center",
         justifyContent: "center", cursor: "pointer",
-        color: on ? theme.success : theme.textSub,
+        color: bluetoothOn ? theme.success : theme.textSub,
         minHeight: "44px", width: "100%", height: "100%",
         transition: "background 0.18s, border-color 0.18s, color 0.18s",
         touchAction: "manipulation", userSelect: "none",
@@ -746,7 +674,28 @@ function transportBtn(theme: Theme): React.CSSProperties {
   return { background: "transparent", border: "none", cursor: "pointer", color: theme.text, padding: "2px" };
 }
 
-// Export HomeCar for backward compat (CarDetailsView uses it)
+/**
+ * HomeCar — top-down view. Shared by MeterDashboard and CarDetailsView
+ * so the silhouette matches across every screen of the app.
+ */
 export function HomeCar({ theme }: { theme: Theme }) {
-  return <SideViewCar theme={theme} />;
+  const isDark = theme.mode === "night";
+  const body  = isDark ? "#c8d4e8" : "#d4dff5";
+  const dark  = isDark ? "#2a2d44" : "#363952";
+  const glass = isDark ? "rgba(140,170,230,0.48)" : "rgba(150,185,245,0.58)";
+  return (
+    <svg viewBox="0 0 120 200" width="100%" style={{ maxHeight: "100%", display: "block" }} preserveAspectRatio="xMidYMid meet">
+      {/* Body */}
+      <rect x="18" y="28" width="84" height="144" rx="22" fill={body} />
+      {/* Windshield */}
+      <rect x="26" y="44" width="68" height="40" rx="7" fill={glass} />
+      {/* Rear window */}
+      <rect x="26" y="118" width="68" height="38" rx="7" fill={glass} />
+      {/* Wheels */}
+      <rect x="5"  y="48"  width="17" height="32" rx="5" fill={dark} />
+      <rect x="98" y="48"  width="17" height="32" rx="5" fill={dark} />
+      <rect x="5"  y="120" width="17" height="32" rx="5" fill={dark} />
+      <rect x="98" y="120" width="17" height="32" rx="5" fill={dark} />
+    </svg>
+  );
 }
