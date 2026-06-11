@@ -91,6 +91,9 @@ type NavContextValue = {
   bluetoothOn: boolean;
   setBluetoothOn: (v: boolean) => void;
 
+  climateTemp: number;
+  setClimateTemp: (v: number | ((prev: number) => number)) => void;
+
   batteryPct: number;
   kmLeft: number;
 
@@ -132,6 +135,7 @@ export function NavProvider({ children }: { children: ReactNode }) {
   const [speed, setSpeed] = useState(0);
   const [wifiOn, setWifiOn] = useState(false);
   const [bluetoothOn, setBluetoothOn] = useState(false);
+  const [climateTemp, setClimateTemp] = useState(22);
 
   const [destinationKey, setDestinationKey] = useState<DestKey | null>(null);
   const [navProgress, setNavProgress] = useState(0);
@@ -199,6 +203,7 @@ export function NavProvider({ children }: { children: ReactNode }) {
       speed, setSpeed,
       wifiOn, setWifiOn,
       bluetoothOn, setBluetoothOn,
+      climateTemp, setClimateTemp,
 
       batteryPct: 23,
       kmLeft: 167,

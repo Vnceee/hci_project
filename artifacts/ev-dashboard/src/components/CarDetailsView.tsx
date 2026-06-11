@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import type { Theme } from "@/context/ThemeContext";
 import { useNav } from "@/context/NavContext";
@@ -10,9 +10,10 @@ export default function CarDetailsView() {
   // the gear shifter and Car Details simply mirrors it (read-only).
   // Pull battery + range from NavContext so this screen, the homepage and
   // the meter cluster all show the same numbers.
-  const { setView, gear, mode, setMode, batteryPct, kmLeft } = useNav();
+  const { setView, gear, mode, batteryPct, kmLeft } = useNav();
   const [charging, setCharging] = useState(false);
   const [locked, setLocked] = useState(true);
+  const [trunkOpen, setTrunkOpen] = useState(false);
 
   return (
     <div
@@ -122,12 +123,7 @@ export default function CarDetailsView() {
           flexDirection: "column",
           gap: "12px",
         }}>
-          <DetailAction theme={theme} label="Trunk">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 17v-3a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v3" />
-              <circle cx="7" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" />
-            </svg>
-          </DetailAction>
+          <TrunkAction theme={theme} open={trunkOpen} onToggle={() => setTrunkOpen(v => !v)} />
           <DetailAction
             theme={theme}
             label={locked ? "Locked" : "Unlocked"}
@@ -156,10 +152,11 @@ export default function CarDetailsView() {
         </DetailAction>
       </div>
 
-      {/* Bottom-center: Drive-mode picker + read-only gear pill.
-          Gear is set from the meter cluster — shown here as a label only. */}
+      {/* Bottom-center: single mode label + gear pill */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-        <DriveModeRow theme={theme} mode={mode} setMode={setMode} readOnly />
+        <div style={{ fontSize: "13px", fontWeight: 700, color: theme.textSub }}>
+          Mode: <span style={{ color: theme.success }}>{mode}</span>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{
             border: `1.5px solid ${gear === "R" ? theme.danger : theme.success}`,
@@ -262,6 +259,46 @@ function DetailAction({
       }}>{children}</div>
       <span style={{ fontSize: "10px", color: activeColor ?? theme.textMuted, fontWeight: 600 }}>{label}</span>
     </button>
+  );
+}
+
+/** Hold-to-open trunk button — hold 600 ms to toggle; green when open. */
+function TrunkAction({ theme, open, onToggle }: { theme: Theme; open: boolean; onToggle: () => void }) {
+  const heldRef  = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clear = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
+  const onDown = () => {
+    heldRef.current = false; clear();
+    timerRef.current = setTimeout(() => { heldRef.current = true; onToggle(); }, 600);
+  };
+  const onUp = () => { clear(); };
+  const onLeave = () => { clear(); heldRef.current = false; };
+  const color = open ? theme.success : undefined;
+  return (
+    <div
+      onPointerDown={onDown} onPointerUp={onUp}
+      onPointerLeave={onLeave} onPointerCancel={onLeave}
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", cursor: "pointer", padding: "4px", userSelect: "none", touchAction: "manipulation" }}
+    >
+      <div style={{
+        width: "42px", height: "42px",
+        background: color ? `${color}22` : theme.cardBg,
+        border: `1px solid ${color ?? theme.border}`,
+        borderRadius: "12px",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: color ?? theme.text,
+        boxShadow: color ? `0 0 12px ${color}33` : undefined,
+        transition: "all 0.15s",
+      }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M3 17v-3a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v3" />
+          <circle cx="7" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" />
+        </svg>
+      </div>
+      <span style={{ fontSize: "10px", color: color ?? theme.textMuted, fontWeight: 600 }}>
+        {open ? "Open" : "Trunk"}
+      </span>
+    </div>
   );
 }
 

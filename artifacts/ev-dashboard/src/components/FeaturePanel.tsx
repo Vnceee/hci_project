@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import type { Theme } from "@/context/ThemeContext";
+import { useNav } from "@/context/NavContext";
 import type { ViewMode } from "@/context/NavContext";
 
 /**
@@ -548,7 +549,7 @@ function SettingsView({ theme }: { theme: Theme }) {
 /* ============================ Wi-Fi ============================ */
 
 function WifiView({ theme }: { theme: Theme }) {
-  const [on, setOn] = useState(false);
+  const { wifiOn: on, setWifiOn: setOn } = useNav();
   return (
     <div>
       <Section theme={theme}>
@@ -572,7 +573,7 @@ function WifiView({ theme }: { theme: Theme }) {
 /* ============================ Bluetooth ============================ */
 
 function BluetoothView({ theme }: { theme: Theme }) {
-  const [on, setOn] = useState(false);
+  const { bluetoothOn: on, setBluetoothOn: setOn } = useNav();
   return (
     <div>
       <Section theme={theme}>

@@ -319,8 +319,8 @@ function StationsMap({ theme, stations, selectedId, onSelect }: {
     if (!containerRef.current || mapRef.current) return;
 
     const map = L.map(containerRef.current, {
-      center: [1.5295, 110.3590],
-      zoom: 11,
+      center: HERE_LATLNG,
+      zoom: 13,
       zoomControl: false,
       attributionControl: false,
     });
@@ -384,8 +384,9 @@ function StationsMap({ theme, stations, selectedId, onSelect }: {
     });
     markersRef.current = fresh;
 
-    const bounds = L.latLngBounds(stations.map(s => [s.lat, s.lng] as [number, number]));
-    map.fitBounds(bounds, { padding: [40, 40] });
+    if (!selectedId) {
+      map.flyTo(HERE_LATLNG, 13, { duration: 0.6 });
+    }
   }, [stations, selectedId, theme.highlight, theme.orange, theme.success, onSelect]);
 
   useEffect(() => {

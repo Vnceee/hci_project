@@ -139,9 +139,9 @@ function CarPanel({ theme }: { theme: Theme }) {
         </div>
       </div>
 
-      {/* Side-view car — fills available height */}
+      {/* Top-down car with tyre glow */}
       <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <SideViewCar theme={theme} />
+        <HomeCar theme={theme} />
       </div>
 
       {/* Tyre remark */}
@@ -180,26 +180,9 @@ function CarPanel({ theme }: { theme: Theme }) {
         </div>
       </div>
 
-      {/* Drive mode display — read-only, reflects current mode */}
-      <div
-        style={{ display: "flex", gap: "6px", flexShrink: 0, pointerEvents: "none" }}
-        onClick={e => e.stopPropagation()}
-      >
-        {(["Auto", "Eco", "Normal", "Sport"] as const).map(m => {
-          const active = m === mode;
-          return (
-            <div key={m} style={{
-              flex: 1, padding: "7px 4px",
-              background: active ? theme.success : theme.cardBg,
-              border: `1px solid ${active ? theme.success : theme.border}`,
-              borderRadius: "10px",
-              color: active ? "#fff" : theme.textSub,
-              fontSize: "11px", fontWeight: 700,
-              textAlign: "center",
-              boxShadow: active ? `0 3px 10px ${theme.success}55` : "none",
-            }}>{m}</div>
-          );
-        })}
+      {/* Drive mode — single label */}
+      <div style={{ flexShrink: 0, fontSize: "12px", fontWeight: 700, color: theme.textSub }} onClick={e => e.stopPropagation()}>
+        Mode: <span style={{ color: theme.success }}>{mode}</span>
       </div>
     </div>
   );
@@ -239,7 +222,7 @@ export function NavMapPanel({ theme }: { theme: Theme }) {
         </div>
       )}
 
-      <div style={{ flex: 1, minHeight: 0, cursor: "pointer" }} onClick={() => enterNav()}>
+      <div style={{ flex: 1, minHeight: 0, cursor: "pointer" }} onDoubleClick={() => enterNav()}>
         <MiniMap height={0} fill />
       </div>
 
@@ -277,8 +260,7 @@ export function NavMapPanel({ theme }: { theme: Theme }) {
 /*  Column 2 — Feature cards (home view)                               */
 /* =================================================================== */
 function CardsPanel({ theme, showLiveLocation }: { theme: Theme; showLiveLocation: boolean }) {
-  const { setView, setFullScreenFeature, enterNav } = useNav();
-  const [temperature, setTemperature] = useState(18);
+  const { setView, setFullScreenFeature, enterNav, climateTemp: temperature, setClimateTemp: setTemperature } = useNav();
 
   const open = (v: ViewMode) => { setView(v); };
   const openFull = (v: ViewMode) => { setView(v); setFullScreenFeature(true); };
@@ -384,7 +366,7 @@ function CardsPanel({ theme, showLiveLocation }: { theme: Theme; showLiveLocatio
               display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
             }}
           >
-            <AutoIcon /> Climate Control
+            Climate Control
           </button>
         </div>
         <FanTile theme={theme} />
@@ -675,16 +657,34 @@ function transportBtn(theme: Theme): React.CSSProperties {
 }
 
 /**
- * HomeCar — top-down view. Shared by MeterDashboard and CarDetailsView
- * so the silhouette matches across every screen of the app.
+ * HomeCar — top-down view with tyre-status glow dots.
+ * Shared by MeterDashboard and CarDetailsView so the silhouette matches.
  */
 export function HomeCar({ theme }: { theme: Theme }) {
   const isDark = theme.mode === "night";
   const body  = isDark ? "#c8d4e8" : "#d4dff5";
   const dark  = isDark ? "#2a2d44" : "#363952";
   const glass = isDark ? "rgba(140,170,230,0.48)" : "rgba(150,185,245,0.58)";
+
+  const tyreColor = (psi: number) => {
+    const s = classifyTyre(psi);
+    if (s === "critical") return "#ef4444";
+    if (s === "low")      return "#FFBA00";
+    return "#16C47F";
+  };
+
+  const [fl, fr, rl, rr] = TYRE_READINGS;
+
   return (
     <svg viewBox="0 0 120 200" width="100%" style={{ maxHeight: "100%", display: "block" }} preserveAspectRatio="xMidYMid meet">
+      <defs>
+        {/* Glow filter for low/critical tyres */}
+        <filter id="hc-glow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+
       {/* Body */}
       <rect x="18" y="28" width="84" height="144" rx="22" fill={body} />
       {/* Windshield */}
@@ -696,6 +696,16 @@ export function HomeCar({ theme }: { theme: Theme }) {
       <rect x="98" y="48"  width="17" height="32" rx="5" fill={dark} />
       <rect x="5"  y="120" width="17" height="32" rx="5" fill={dark} />
       <rect x="98" y="120" width="17" height="32" rx="5" fill={dark} />
+
+      {/* Tyre status dots — positioned at outer corner of each wheel */}
+      <circle cx="5"   cy="50"  r="6" fill={tyreColor(fl.psi)}
+        filter={classifyTyre(fl.psi) !== "normal" ? "url(#hc-glow)" : undefined} />
+      <circle cx="115" cy="50"  r="6" fill={tyreColor(fr.psi)}
+        filter={classifyTyre(fr.psi) !== "normal" ? "url(#hc-glow)" : undefined} />
+      <circle cx="5"   cy="150" r="6" fill={tyreColor(rl.psi)}
+        filter={classifyTyre(rl.psi) !== "normal" ? "url(#hc-glow)" : undefined} />
+      <circle cx="115" cy="150" r="6" fill={tyreColor(rr.psi)}
+        filter={classifyTyre(rr.psi) !== "normal" ? "url(#hc-glow)" : undefined} />
     </svg>
   );
 }

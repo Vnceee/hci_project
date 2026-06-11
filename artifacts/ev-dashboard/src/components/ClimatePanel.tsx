@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import type { Theme } from "@/context/ThemeContext";
+import { useNav } from "@/context/NavContext";
 
 type AirFlow = "feet" | "feet-face" | "face" | "face-defrost" | "defrost";
 type Mode = "preset" | "auto" | "rain";
 
 export default function ClimatePanel() {
   const { theme } = useTheme();
+  const { climateTemp: temp, setClimateTemp: setTemp } = useNav();
   // Default OFF
   const [acOn, setAcOn] = useState(false);
-  const [temp, setTemp] = useState(22);
   const [fanSpeed, setFanSpeed] = useState(2);
   const [airFlow, setAirFlow] = useState<AirFlow>("face");
   const [mode, setMode] = useState<Mode>("auto");
