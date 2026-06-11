@@ -57,7 +57,7 @@ function getColors(isDark: boolean, danger: string, warning: string): ClusterCol
  */
 export default function MeterDashboard() {
   const { theme } = useTheme();
-  const { goHome, gear, setGear, signal, setSignal, brake, setBrake, speed, setSpeed, batteryPct } = useNav();
+  const { goHome, gear, setGear, signal, setSignal, brake, setBrake, speed, setSpeed, batteryPct, mode, kmLeft } = useNav();
   const c = getColors(theme.mode === "night", theme.danger, theme.warning);
 
   // Pedals: gas accelerates while held; brake decelerates while held.
@@ -273,9 +273,9 @@ export default function MeterDashboard() {
           <span style={{ fontSize: "clamp(12px, 1.6vw, 24px)", color: c.text, fontWeight: 600 }}>9:50</span>
         </div>
 
-        {/* Normal / 200km left pills */}
-        <Pill colors={c} style={{ position: "absolute", top: "12%", left: "17%" }}>Normal</Pill>
-        <Pill colors={c} style={{ position: "absolute", top: "12%", right: "17%" }}>200km left</Pill>
+        {/* Drive mode / range pills — mirror NavContext so they match the home panel */}
+        <Pill colors={c} style={{ position: "absolute", top: "12%", left: "17%" }}>{mode}</Pill>
+        <Pill colors={c} style={{ position: "absolute", top: "12%", right: "17%" }}>{kmLeft} km left</Pill>
 
         {/* Gauges */}
         <div style={{ position: "absolute", left: "8%", top: "24%", width: "30%", height: "58%" }}>

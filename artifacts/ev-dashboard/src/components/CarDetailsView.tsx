@@ -154,7 +154,14 @@ export default function CarDetailsView() {
 
       {/* Bottom-center: single mode label + gear pill */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-        <div style={{ fontSize: "13px", fontWeight: 700, color: theme.textSub }}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: "5px",
+          background: theme.cardBg,
+          border: `1px solid ${theme.border}`,
+          borderRadius: "8px",
+          padding: "4px 10px",
+          fontSize: "11px", fontWeight: 700, color: theme.textSub,
+        }}>
           Mode: <span style={{ color: theme.success }}>{mode}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

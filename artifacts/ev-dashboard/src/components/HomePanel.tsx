@@ -180,9 +180,18 @@ function CarPanel({ theme }: { theme: Theme }) {
         </div>
       </div>
 
-      {/* Drive mode — single label */}
-      <div style={{ flexShrink: 0, fontSize: "12px", fontWeight: 700, color: theme.textSub }} onClick={e => e.stopPropagation()}>
-        Mode: <span style={{ color: theme.success }}>{mode}</span>
+      {/* Drive mode — pill box */}
+      <div style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: "5px",
+          background: theme.cardBg,
+          border: `1px solid ${theme.border}`,
+          borderRadius: "8px",
+          padding: "4px 10px",
+          fontSize: "11px", fontWeight: 700, color: theme.textSub,
+        }}>
+          Mode: <span style={{ color: theme.success }}>{mode}</span>
+        </div>
       </div>
     </div>
   );
@@ -353,6 +362,7 @@ function CardsPanel({ theme, showLiveLocation }: { theme: Theme; showLiveLocatio
               transform: "translateY(-50%)",
               width: "18px", height: "18px", borderRadius: "50%",
               background: "#fff", border: `1px solid ${theme.border}`, boxShadow: "0 2px 4px rgba(0,0,0,0.18)",
+              pointerEvents: "none",
             }} />
           </div>
           <button

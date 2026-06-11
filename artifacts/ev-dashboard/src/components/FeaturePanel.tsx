@@ -15,8 +15,8 @@ export default function FeaturePanel({ view }: { view: ViewMode }) {
 
   const title = TITLES[view] ?? "";
   const showRefresh = view === "wifi" || view === "bluetooth";
-  // Weather should fit inside the panel without scrolling.
-  const noScroll = view === "weather";
+  // These views fill the panel height exactly — no scroll needed.
+  const noScroll = view === "weather" || view === "call";
 
   return (
     <Shell theme={theme} title={title} showRefresh={showRefresh} noScroll={noScroll}>
@@ -415,13 +415,22 @@ function CallView({ theme }: { theme: Theme }) {
   const backspace = () => setNumber(n => n.slice(0, -1));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: "6px" }}>
       <SearchBar theme={theme} placeholder="Search contact" />
-      <div style={{ fontSize: "24px", fontWeight: 700, color: theme.text, textAlign: "center", letterSpacing: "1px" }}>
+
+      <div style={{ fontSize: "22px", fontWeight: 700, color: theme.text, textAlign: "center",
+        letterSpacing: "1px", flexShrink: 0, lineHeight: 1.2 }}>
         {number || "\u00A0"}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginTop: "4px" }}>
+      {/* Dialpad — stretches to fill remaining height */}
+      <div style={{
+        flex: 1, minHeight: 0,
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gridTemplateRows: "repeat(4, 1fr)",
+        gap: "5px",
+      }}>
         {[
           ["1", ""], ["2", "ABC"], ["3", "DEF"],
           ["4", "GHI"], ["5", "JKL"], ["6", "MNO"],
@@ -434,19 +443,20 @@ function CallView({ theme }: { theme: Theme }) {
             style={{
               background: theme.cardBg,
               border: `1px solid ${theme.border}`,
-              borderRadius: "999px",
-              aspectRatio: "1.6 / 1",
+              borderRadius: "14px",
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              color: theme.text, cursor: "pointer", padding: "6px",
+              color: theme.text, cursor: "pointer", padding: "4px",
             }}
           >
-            <span style={{ fontSize: "18px", fontWeight: 600, lineHeight: 1 }}>{k}</span>
-            {sub && <span style={{ fontSize: "8px", color: theme.textMuted, marginTop: "2px" }}>{sub}</span>}
+            <span style={{ fontSize: "17px", fontWeight: 600, lineHeight: 1 }}>{k}</span>
+            {sub && <span style={{ fontSize: "7px", color: theme.textMuted, marginTop: "2px" }}>{sub}</span>}
           </button>
         ))}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", marginTop: "6px" }}>
+      {/* Action row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around",
+        flexShrink: 0, paddingBottom: "2px" }}>
         <IconBtn theme={theme} title="Recent">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
         </IconBtn>
