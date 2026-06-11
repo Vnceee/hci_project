@@ -657,55 +657,118 @@ function transportBtn(theme: Theme): React.CSSProperties {
 }
 
 /**
- * HomeCar — top-down view with tyre-status glow dots.
- * Shared by MeterDashboard and CarDetailsView so the silhouette matches.
+ * HomeCar — identical silhouette to TyreCar in TyreStatusView.
+ * Only difference: instead of numeric PSI badges, the tyre wheel border
+ * itself glows in the status colour (yellow = low, red = critical, none = normal).
  */
 export function HomeCar({ theme }: { theme: Theme }) {
   const isDark = theme.mode === "night";
-  const body  = isDark ? "#c8d4e8" : "#d4dff5";
-  const dark  = isDark ? "#2a2d44" : "#363952";
-  const glass = isDark ? "rgba(140,170,230,0.48)" : "rgba(150,185,245,0.58)";
 
-  const tyreColor = (psi: number) => {
+  const tyreStroke = (psi: number): string | null => {
     const s = classifyTyre(psi);
     if (s === "critical") return "#ef4444";
     if (s === "low")      return "#FFBA00";
-    return "#16C47F";
+    return null;
   };
 
   const [fl, fr, rl, rr] = TYRE_READINGS;
 
+  const Wheel = ({
+    x, y, psi,
+  }: { x: number; y: number; psi: number }) => {
+    const stroke = tyreStroke(psi);
+    return (
+      <rect
+        x={x} y={y} width="26" height="46" rx="5"
+        fill={isDark ? "#0d1020" : "#1a1d30"}
+        stroke={stroke ?? "none"}
+        strokeWidth={stroke ? 3 : 0}
+        filter={stroke ? "url(#hc-wglow)" : undefined}
+      />
+    );
+  };
+
   return (
-    <svg viewBox="0 0 120 200" width="100%" style={{ maxHeight: "100%", display: "block" }} preserveAspectRatio="xMidYMid meet">
+    <svg viewBox="0 0 360 420" width="100%" height="100%"
+      style={{ maxHeight: "100%", display: "block" }} preserveAspectRatio="xMidYMid meet">
       <defs>
-        {/* Glow filter for low/critical tyres */}
-        <filter id="hc-glow" x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation="3" result="blur" />
+        <linearGradient id="hc-body" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor={isDark ? "#c8d4ec" : "#d8e4f8"} stopOpacity="0.85" />
+          <stop offset="50%"  stopColor={isDark ? "#e0eaff" : "#eef4ff"} />
+          <stop offset="100%" stopColor={isDark ? "#b8c8e0" : "#ccd8f0"} stopOpacity="0.8" />
+        </linearGradient>
+        <linearGradient id="hc-roof" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor={isDark ? "#5a6a8a" : "#6a7ea8"} />
+          <stop offset="50%"  stopColor={isDark ? "#7888a8" : "#889ab8"} />
+          <stop offset="100%" stopColor={isDark ? "#4a5a78" : "#5a6e90"} />
+        </linearGradient>
+        <filter id="hc-shadow">
+          <feDropShadow dx="0" dy="10" stdDeviation="18"
+            floodColor={isDark ? "rgba(74,142,255,0.15)" : "rgba(37,99,235,0.10)"} />
+        </filter>
+        {/* Tyre border glow — spread around the wheel rect */}
+        <filter id="hc-wglow" x="-40%" y="-20%" width="180%" height="140%">
+          <feGaussianBlur stdDeviation="5" result="blur" />
           <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
 
-      {/* Body */}
-      <rect x="18" y="28" width="84" height="144" rx="22" fill={body} />
-      {/* Windshield */}
-      <rect x="26" y="44" width="68" height="40" rx="7" fill={glass} />
-      {/* Rear window */}
-      <rect x="26" y="118" width="68" height="38" rx="7" fill={glass} />
-      {/* Wheels */}
-      <rect x="5"  y="48"  width="17" height="32" rx="5" fill={dark} />
-      <rect x="98" y="48"  width="17" height="32" rx="5" fill={dark} />
-      <rect x="5"  y="120" width="17" height="32" rx="5" fill={dark} />
-      <rect x="98" y="120" width="17" height="32" rx="5" fill={dark} />
+      <g filter="url(#hc-shadow)" transform="translate(180, 210)">
+        {/* Front spoiler */}
+        <path d="M-58 -140 Q0 -156 58 -140 L52 -125 Q0 -138 -52 -125 Z"
+              fill="url(#hc-body)" opacity="0.75" />
 
-      {/* Tyre status dots — positioned at outer corner of each wheel */}
-      <circle cx="5"   cy="50"  r="6" fill={tyreColor(fl.psi)}
-        filter={classifyTyre(fl.psi) !== "normal" ? "url(#hc-glow)" : undefined} />
-      <circle cx="115" cy="50"  r="6" fill={tyreColor(fr.psi)}
-        filter={classifyTyre(fr.psi) !== "normal" ? "url(#hc-glow)" : undefined} />
-      <circle cx="5"   cy="150" r="6" fill={tyreColor(rl.psi)}
-        filter={classifyTyre(rl.psi) !== "normal" ? "url(#hc-glow)" : undefined} />
-      <circle cx="115" cy="150" r="6" fill={tyreColor(rr.psi)}
-        filter={classifyTyre(rr.psi) !== "normal" ? "url(#hc-glow)" : undefined} />
+        {/* Wheels — tyre border glows on abnormal pressure */}
+        <Wheel x={-82} y={-120} psi={fl.psi} />
+        <Wheel x={56}  y={-120} psi={fr.psi} />
+
+        {/* Main body */}
+        <path d="M-58 -125 Q-65 -118 -65 -108 L-65 108 Q-65 120 -55 125 L55 125 Q65 120 65 108 L65 -108 Q65 -118 58 -125 Z"
+              fill="url(#hc-body)" />
+
+        {/* Front glass */}
+        <path d="M-55 -125 Q0 -140 55 -125 L55 -75 Q0 -85 -55 -75 Z"
+              fill={isDark ? "#ccd8ee" : "#dce8fc"} opacity="0.85" />
+
+        {/* Roof top section */}
+        <path d="M-50 -75 Q0 -85 50 -75 L45 -35 Q0 -42 -45 -35 Z"
+              fill="url(#hc-roof)" opacity="0.92" />
+
+        {/* Sunroof / center roof panel */}
+        <path d="M-45 -35 Q0 -42 45 -35 L45 35 Q0 30 -45 35 Z"
+              fill={isDark ? "#62728e" : "#72849e"} />
+
+        {/* Roof rear section */}
+        <path d="M-45 35 Q0 30 45 35 L50 75 Q0 82 -50 75 Z"
+              fill="url(#hc-roof)" opacity="0.82" />
+
+        {/* Rear glass */}
+        <path d="M-55 75 Q0 85 55 75 L55 125 Q0 138 -55 125 Z"
+              fill={isDark ? "#ccd8ee" : "#dce8fc"} opacity="0.8" />
+
+        {/* Rear wheels */}
+        <Wheel x={-82} y={74} psi={rl.psi} />
+        <Wheel x={56}  y={74} psi={rr.psi} />
+
+        {/* Rear spoiler */}
+        <path d="M-55 125 Q0 140 55 125 L58 142 Q0 156 -58 142 Z"
+              fill={isDark ? "#b8c8e0" : "#c8d8f0"} opacity="0.7" />
+
+        {/* Front headlights */}
+        <rect x="-52" y="-138" width="20" height="7" rx="2" fill="#ffd060" opacity="0.95" />
+        <rect x="32"  y="-138" width="20" height="7" rx="2" fill="#ffd060" opacity="0.95" />
+
+        {/* Rear taillights */}
+        <rect x="-52" y="130" width="20" height="9" rx="2" fill="#ff3344" opacity="0.9" />
+        <rect x="32"  y="130" width="20" height="9" rx="2" fill="#ff3344" opacity="0.9" />
+        <rect x="-54" y="129" width="24" height="11" rx="3" fill="#ff3344" opacity="0.35"
+              style={{ filter: "blur(4px)" }} />
+        <rect x="30"  y="129" width="24" height="11" rx="3" fill="#ff3344" opacity="0.35"
+              style={{ filter: "blur(4px)" }} />
+
+        {/* Centre line */}
+        <line x1="0" y1="-125" x2="0" y2="125" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5" />
+      </g>
     </svg>
   );
 }

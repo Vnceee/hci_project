@@ -177,7 +177,7 @@ export function NavProvider({ children }: { children: ReactNode }) {
     <NavContext.Provider value={{
       navMode,
       isNavigating,
-      enterNav: () => setNavMode(true),
+      enterNav: () => { setNavMode(true); setViewRaw("home"); },
       exitNav: () => { setNavMode(false); setIsNavigating(false); },
       startNavigating: () => setIsNavigating(true),
 
